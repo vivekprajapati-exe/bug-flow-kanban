@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -10,16 +9,26 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Eye, EyeOff, Mail, Lock, User } from 'lucide-react';
+import { PasswordStrengthIndicator } from './PasswordStrengthIndicator';
 
 const signInSchema = z.object({
   email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  password: z.string().min(1, 'Password is required'),
 });
 
 const signUpSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  password: z.string()
+    .min(8, 'Password must be at least 8 characters')
+    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+    .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+    .regex(/\d/, 'Password must contain at least one number')
+    .regex(/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/, 'Password must contain at least one special character'),
+  confirmPassword: z.string().min(1, 'Please confirm your password'),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
 });
 
 type SignInFormData = z.infer<typeof signInSchema>;
@@ -28,7 +37,9 @@ type SignUpFormData = z.infer<typeof signUpSchema>;
 export const AuthForm: React.FC = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [passwordValue, setPasswordValue] = useState('');
   const { signIn, signUp } = useAuth();
   const { toast } = useToast();
 
@@ -46,6 +57,7 @@ export const AuthForm: React.FC = () => {
       name: '',
       email: '',
       password: '',
+      confirmPassword: '',
     },
   });
 
@@ -88,6 +100,13 @@ export const AuthForm: React.FC = () => {
   };
 
   const onSubmit = isSignUp ? signUpForm.handleSubmit(onSignUp) : signInForm.handleSubmit(onSignIn);
+
+  const handleFormSwitch = () => {
+    setIsSignUp(!isSignUp);
+    setPasswordValue('');
+    signInForm.reset();
+    signUpForm.reset();
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background/50 to-primary/10 p-4">
@@ -164,7 +183,12 @@ export const AuthForm: React.FC = () => {
                   type={showPassword ? 'text' : 'password'}
                   placeholder="Enter your password"
                   className="pl-10 pr-10 transition-all duration-200 focus:ring-2 focus:ring-primary/20"
-                  {...(isSignUp ? signUpForm.register('password') : signInForm.register('password'))}
+                  {...(isSignUp ? 
+                    signUpForm.register('password', {
+                      onChange: (e) => setPasswordValue(e.target.value)
+                    }) : 
+                    signInForm.register('password')
+                  )}
                 />
                 <Button
                   type="button"
@@ -193,7 +217,51 @@ export const AuthForm: React.FC = () => {
                   </p>
                 )
               )}
+              
+              {/* Password Strength Indicator - only show during sign up */}
+              {isSignUp && passwordValue && (
+                <PasswordStrengthIndicator 
+                  password={passwordValue} 
+                  className="mt-3"
+                />
+              )}
             </div>
+
+            {isSignUp && (
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword" className="text-sm font-medium">
+                  Confirm Password
+                </Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    placeholder="Confirm your password"
+                    className="pl-10 pr-10 transition-all duration-200 focus:ring-2 focus:ring-primary/20"
+                    {...signUpForm.register('confirmPassword')}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <Eye className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </Button>
+                </div>
+                {signUpForm.formState.errors.confirmPassword && (
+                  <p className="text-sm text-destructive animate-fade-in">
+                    {signUpForm.formState.errors.confirmPassword.message}
+                  </p>
+                )}
+              </div>
+            )}
 
             <Button
               type="submit"
@@ -214,11 +282,7 @@ export const AuthForm: React.FC = () => {
           <div className="mt-6 text-center">
             <Button
               variant="link"
-              onClick={() => {
-                setIsSignUp(!isSignUp);
-                signInForm.reset();
-                signUpForm.reset();
-              }}
+              onClick={handleFormSwitch}
               className="text-muted-foreground hover:text-primary transition-colors"
             >
               {isSignUp
