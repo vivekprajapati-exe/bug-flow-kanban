@@ -87,7 +87,6 @@ export const AuthForm: React.FC = () => {
     }
   };
 
-  const currentForm = isSignUp ? signUpForm : signInForm;
   const onSubmit = isSignUp ? signUpForm.handleSubmit(onSignUp) : signInForm.handleSubmit(onSignIn);
 
   return (
@@ -136,13 +135,21 @@ export const AuthForm: React.FC = () => {
                   type="email"
                   placeholder="Enter your email"
                   className="pl-10 transition-all duration-200 focus:ring-2 focus:ring-primary/20"
-                  {...currentForm.register('email')}
+                  {...(isSignUp ? signUpForm.register('email') : signInForm.register('email'))}
                 />
               </div>
-              {currentForm.formState.errors.email && (
-                <p className="text-sm text-destructive animate-fade-in">
-                  {currentForm.formState.errors.email.message}
-                </p>
+              {isSignUp ? (
+                signUpForm.formState.errors.email && (
+                  <p className="text-sm text-destructive animate-fade-in">
+                    {signUpForm.formState.errors.email.message}
+                  </p>
+                )
+              ) : (
+                signInForm.formState.errors.email && (
+                  <p className="text-sm text-destructive animate-fade-in">
+                    {signInForm.formState.errors.email.message}
+                  </p>
+                )
               )}
             </div>
 
@@ -157,7 +164,7 @@ export const AuthForm: React.FC = () => {
                   type={showPassword ? 'text' : 'password'}
                   placeholder="Enter your password"
                   className="pl-10 pr-10 transition-all duration-200 focus:ring-2 focus:ring-primary/20"
-                  {...currentForm.register('password')}
+                  {...(isSignUp ? signUpForm.register('password') : signInForm.register('password'))}
                 />
                 <Button
                   type="button"
@@ -173,10 +180,18 @@ export const AuthForm: React.FC = () => {
                   )}
                 </Button>
               </div>
-              {currentForm.formState.errors.password && (
-                <p className="text-sm text-destructive animate-fade-in">
-                  {currentForm.formState.errors.password.message}
-                </p>
+              {isSignUp ? (
+                signUpForm.formState.errors.password && (
+                  <p className="text-sm text-destructive animate-fade-in">
+                    {signUpForm.formState.errors.password.message}
+                  </p>
+                )
+              ) : (
+                signInForm.formState.errors.password && (
+                  <p className="text-sm text-destructive animate-fade-in">
+                    {signInForm.formState.errors.password.message}
+                  </p>
+                )
               )}
             </div>
 
@@ -201,7 +216,8 @@ export const AuthForm: React.FC = () => {
               variant="link"
               onClick={() => {
                 setIsSignUp(!isSignUp);
-                currentForm.reset();
+                signInForm.reset();
+                signUpForm.reset();
               }}
               className="text-muted-foreground hover:text-primary transition-colors"
             >
