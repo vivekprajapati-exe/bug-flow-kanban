@@ -3,9 +3,18 @@ import React, { createContext, useContext, useEffect, useState, ReactNode } from
 import { User, Session } from '@supabase/supabase-js';
 import { auth } from '@/lib/auth';
 
+interface UserProfile {
+  id: string;
+  email: string;
+  name: string;
+  created_at: string;
+  updated_at: string;
+}
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
+  profile: UserProfile | null;
   loading: boolean;
   signUp: (email: string, password: string, name: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
@@ -29,24 +38,51 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     console.log('Setting up auth state listener');
 
     // Set up auth state listener
-    const { data: { subscription } } = auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = auth.onAuthStateChange(async (event, session) => {
       console.log('Auth state changed:', event, session?.user?.email);
       setSession(session);
       setUser(session?.user ?? null);
+      
+      // Fetch user profile when user signs in
+      if (session?.user) {
+        try {
+          const userProfile = await auth.getUserProfile(session.user.id);
+          setProfile(userProfile);
+        } catch (error) {
+          console.error('Error fetching user profile:', error);
+          setProfile(null);
+        }
+      } else {
+        setProfile(null);
+      }
+      
       setLoading(false);
     });
 
     // Get initial session
-    auth.getSession().then(({ data: { session } }) => {
+    auth.getSession().then(async ({ data: { session } }) => {
       console.log('Initial session:', session?.user?.email);
       setSession(session);
       setUser(session?.user ?? null);
+      
+      // Fetch user profile for initial session
+      if (session?.user) {
+        try {
+          const userProfile = await auth.getUserProfile(session.user.id);
+          setProfile(userProfile);
+        } catch (error) {
+          console.error('Error fetching initial user profile:', error);
+          setProfile(null);
+        }
+      }
+      
       setLoading(false);
     });
 
@@ -75,6 +111,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const signOut = async () => {
     try {
       await auth.signOut();
+      setProfile(null);
     } catch (error) {
       throw error;
     }
@@ -83,6 +120,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const value = {
     user,
     session,
+    profile,
     loading,
     signUp,
     signIn,

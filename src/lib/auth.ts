@@ -79,5 +79,23 @@ export const auth = {
 
   onAuthStateChange: (callback: (event: string, session: Session | null) => void) => {
     return supabase.auth.onAuthStateChange(callback);
+  },
+
+  getUserProfile: async (userId: string) => {
+    console.log('Fetching user profile for:', userId);
+    
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (error) {
+      console.error('Error fetching user profile:', error);
+      throw new Error(error.message);
+    }
+
+    console.log('User profile fetched:', data);
+    return data;
   }
 };
