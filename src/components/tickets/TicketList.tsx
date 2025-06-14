@@ -60,7 +60,13 @@ export function TicketList({ projectId, onTicketUpdated }: TicketListProps) {
         variant: 'destructive',
       });
     } else {
-      setTickets(data || []);
+      // Type assertion to ensure the data matches our Ticket interface
+      const typedTickets = (data || []).map(ticket => ({
+        ...ticket,
+        priority: ticket.priority as 'low' | 'medium' | 'high',
+        status: ticket.status as 'todo' | 'in progress' | 'done'
+      }));
+      setTickets(typedTickets);
     }
     setIsLoading(false);
   };
