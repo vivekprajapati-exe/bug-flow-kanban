@@ -145,7 +145,7 @@ export const organizationsApi = {
 
     return {
       ...org,
-      user_role: 'owner',
+      user_role: 'owner' as const,
       member_count: 1
     };
   },
