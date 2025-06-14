@@ -1,4 +1,4 @@
-// src/components/tickets/TicketForm.tsx
+
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -30,20 +30,18 @@ const formSchema = z.object({
   }),
   description: z.string().optional(),
   priority: z.enum(['low', 'medium', 'high']),
-  assignee: z.string().optional(), // Assuming assignee is a user ID
+  assignee: z.string().optional(),
   status: z.enum(['todo', 'in progress', 'done']).default('todo'),
 });
 
 type TicketFormValues = z.infer<typeof formSchema>;
 
-// Add projectMembers back to the interface
 interface TicketFormProps {
   projectId: string;
   onTicketCreated: () => void;
-  projectMembers: { id: string; email: string; name?: string }[]; // Assuming members have id, email, and potentially name
+  projectMembers: { id: string; email: string; name?: string }[];
 }
 
-// Add projectMembers to the function signature
 export function TicketForm({ projectId, onTicketCreated, projectMembers }: TicketFormProps) {
   const supabase = useSupabaseClient();
   const { toast } = useToast();
@@ -62,37 +60,49 @@ export function TicketForm({ projectId, onTicketCreated, projectMembers }: Ticke
 
   async function onSubmit(values: TicketFormValues) {
     setIsSubmitting(true);
-    const { data, error } = await supabase
-      .from('tickets')
-      .insert([
-        {
-          title: values.title,
-          description: values.description,
-          priority: values.priority,
-          assignee: values.assignee || null,
-          status: values.status,
-          project_id: projectId,
-        },
-      ])
-      .select(); // Select to get the inserted data back
+    
+    try {
+      const { data, error } = await supabase
+        .from('tickets')
+        .insert([
+          {
+            title: values.title,
+            description: values.description || null,
+            priority: values.priority,
+            assignee: values.assignee || null,
+            status: values.status,
+            project_id: projectId,
+          },
+        ])
+        .select()
+        .single();
 
-    if (error) {
-      console.error('Error creating ticket:', error);
+      if (error) {
+        console.error('Error creating ticket:', error);
+        toast({
+          title: 'Error creating ticket',
+          description: error.message,
+          variant: 'destructive',
+        });
+      } else {
+        console.log('Ticket created:', data);
+        form.reset();
+        onTicketCreated();
+        toast({
+          title: 'Success',
+          description: 'Ticket created successfully!',
+        });
+      }
+    } catch (err) {
+      console.error('Unexpected error:', err);
       toast({
-        title: 'Error creating ticket',
-        description: error.message,
+        title: 'Error',
+        description: 'An unexpected error occurred.',
         variant: 'destructive',
       });
-    } else {
-      console.log('Ticket created:', data);
-      form.reset();
-      onTicketCreated();
-      toast({
-        title: 'Ticket created successfully',
-        description: 'Your ticket has been added to the project.',
-      });
+    } finally {
+      setIsSubmitting(false);
     }
-    setIsSubmitting(false);
   }
 
   return (
@@ -103,66 +113,98 @@ export function TicketForm({ projectId, onTicketCreated, projectMembers }: Ticke
           name="title"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Title</FormLabel>
+              <FormLabel>Title *</FormLabel>
               <FormControl>
-                <Input placeholder="Ticket title" {...field} />
+                <Input placeholder="Enter ticket title" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
+        
         <FormField
           control={form.control}
           name="description"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Description (Optional)</FormLabel>
+              <FormLabel>Description</FormLabel>
               <FormControl>
-                <Textarea placeholder="Ticket description" {...field} />
+                <Textarea 
+                  placeholder="Describe the issue or task..."
+                  className="min-h-[100px]"
+                  {...field} 
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="priority"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Priority</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select priority" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="low">Low</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        {/* Populate Assignee Select with project members */}
+        
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="priority"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Priority *</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select priority" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          <FormField
+            control={form.control}
+            name="status"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Status *</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="todo">To Do</SelectItem>
+                    <SelectItem value="in progress">In Progress</SelectItem>
+                    <SelectItem value="done">Done</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        
         <FormField
           control={form.control}
           name="assignee"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Assignee (Optional)</FormLabel>
+              <FormLabel>Assignee</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select an assignee" />
+                    <SelectValue placeholder="Select an assignee (optional)" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
+                  <SelectItem value="">Unassigned</SelectItem>
                   {projectMembers.map((member) => (
                     <SelectItem key={member.id} value={member.id}>
-                      {member.name || member.email} {/* Display name if available, otherwise email */}
+                      {member.name || member.email}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -171,30 +213,8 @@ export function TicketForm({ projectId, onTicketCreated, projectMembers }: Ticke
             </FormItem>
           )}
         />
-         <FormField
-          control={form.control}
-          name="status"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Status</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="todo">To Do</SelectItem>
-                  <SelectItem value="in progress">In Progress</SelectItem>
-                  <SelectItem value="done">Done</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
 
-        <Button type="submit" disabled={isSubmitting}>
+        <Button type="submit" disabled={isSubmitting} className="w-full">
           {isSubmitting ? 'Creating...' : 'Create Ticket'}
         </Button>
       </form>
