@@ -6,6 +6,7 @@ export interface Project {
   name: string;
   description: string;
   owner_id: string;
+  organization_id?: string;
   status: 'active' | 'archived' | 'planning';
   created_at: string;
   updated_at: string;
@@ -31,12 +32,14 @@ export interface CreateProjectData {
   name: string;
   description?: string;
   status?: 'active' | 'planning';
+  organization_id?: string;
 }
 
 export interface UpdateProjectData {
   name?: string;
   description?: string;
   status?: 'active' | 'archived' | 'planning';
+  organization_id?: string;
 }
 
 export interface InviteMemberData {
@@ -46,8 +49,8 @@ export interface InviteMemberData {
 
 export const projectsApi = {
   // Get all projects for current user
-  getProjects: async (): Promise<Project[]> => {
-    const { data, error } = await supabase
+  getProjects: async (organizationId?: string): Promise<Project[]> => {
+    let query = supabase
       .from('projects')
       .select(`
         *,
@@ -55,6 +58,12 @@ export const projectsApi = {
         project_members(count)
       `)
       .order('updated_at', { ascending: false });
+
+    if (organizationId) {
+      query = query.eq('organization_id', organizationId);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error('Error fetching projects:', error);

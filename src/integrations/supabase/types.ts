@@ -9,6 +9,71 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      organization_members: {
+        Row: {
+          created_at: string
+          id: string
+          invited_by: string | null
+          joined_at: string
+          organization_id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          invited_by?: string | null
+          joined_at?: string
+          organization_id: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          invited_by?: string | null
+          joined_at?: string
+          organization_id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_members_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organizations: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          logo_url: string | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          logo_url?: string | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          logo_url?: string | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null
@@ -91,6 +156,7 @@ export type Database = {
           description: string | null
           id: string
           name: string
+          organization_id: string | null
           owner_id: string
           status: Database["public"]["Enums"]["project_status"] | null
           updated_at: string | null
@@ -100,6 +166,7 @@ export type Database = {
           description?: string | null
           id?: string
           name: string
+          organization_id?: string | null
           owner_id: string
           status?: Database["public"]["Enums"]["project_status"] | null
           updated_at?: string | null
@@ -109,11 +176,19 @@ export type Database = {
           description?: string | null
           id?: string
           name?: string
+          organization_id?: string | null
           owner_id?: string
           status?: Database["public"]["Enums"]["project_status"] | null
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "projects_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "projects_owner_id_fkey"
             columns: ["owner_id"]
@@ -129,6 +204,7 @@ export type Database = {
           created_at: string | null
           description: string | null
           id: string
+          organization_id: string | null
           priority: string | null
           project_id: string
           status: string | null
@@ -140,6 +216,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
+          organization_id?: string | null
           priority?: string | null
           project_id: string
           status?: string | null
@@ -151,6 +228,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
+          organization_id?: string | null
           priority?: string | null
           project_id?: string
           status?: string | null
@@ -166,10 +244,52 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "tickets_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "tickets_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_permissions: {
+        Row: {
+          created_at: string
+          granted_by: string | null
+          id: string
+          organization_id: string
+          permission: Database["public"]["Enums"]["app_permission"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          organization_id: string
+          permission: Database["public"]["Enums"]["app_permission"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          organization_id?: string
+          permission?: Database["public"]["Enums"]["app_permission"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_permissions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -179,9 +299,29 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      user_belongs_to_organization: {
+        Args: { _user_id: string; _org_id: string }
+        Returns: boolean
+      }
+      user_has_permission: {
+        Args: {
+          _user_id: string
+          _org_id: string
+          _permission: Database["public"]["Enums"]["app_permission"]
+        }
+        Returns: boolean
+      }
     }
     Enums: {
+      app_permission:
+        | "create_projects"
+        | "manage_projects"
+        | "delete_projects"
+        | "create_tickets"
+        | "manage_tickets"
+        | "delete_tickets"
+        | "manage_organization"
+        | "invite_members"
       member_role: "owner" | "admin" | "developer" | "viewer"
       project_status: "active" | "archived" | "planning"
     }
@@ -299,6 +439,16 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_permission: [
+        "create_projects",
+        "manage_projects",
+        "delete_projects",
+        "create_tickets",
+        "manage_tickets",
+        "delete_tickets",
+        "manage_organization",
+        "invite_members",
+      ],
       member_role: ["owner", "admin", "developer", "viewer"],
       project_status: ["active", "archived", "planning"],
     },

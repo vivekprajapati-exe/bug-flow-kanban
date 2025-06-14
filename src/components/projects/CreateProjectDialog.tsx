@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { projectsApi, CreateProjectData } from '@/lib/projects';
+import { organizationsApi, Organization } from '@/lib/organizations';
 
 const createProjectSchema = z.object({
   name: z.string()
@@ -34,6 +35,7 @@ const createProjectSchema = z.object({
     .max(500, 'Description must be less than 500 characters')
     .optional(),
   status: z.enum(['active', 'planning']).default('planning'),
+  organization_id: z.string().optional(),
 });
 
 type CreateProjectFormData = z.infer<typeof createProjectSchema>;
@@ -50,6 +52,7 @@ export const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({
   onSuccess
 }) => {
   const [loading, setLoading] = useState(false);
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
   const { toast } = useToast();
 
   const form = useForm<CreateProjectFormData>({
@@ -58,17 +61,33 @@ export const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({
       name: '',
       description: '',
       status: 'planning',
+      organization_id: '',
     },
   });
+
+  useEffect(() => {
+    const loadOrganizations = async () => {
+      try {
+        const orgs = await organizationsApi.getOrganizations();
+        setOrganizations(orgs);
+      } catch (error) {
+        console.error('Error loading organizations:', error);
+      }
+    };
+
+    if (open) {
+      loadOrganizations();
+    }
+  }, [open]);
 
   const onSubmit = async (data: CreateProjectFormData) => {
     setLoading(true);
     try {
-      // Ensure data conforms to CreateProjectData type
       const projectData: CreateProjectData = {
         name: data.name,
         description: data.description,
         status: data.status,
+        organization_id: data.organization_id || undefined,
       };
       
       await projectsApi.createProject(projectData);
@@ -139,6 +158,28 @@ export const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({
                 {form.formState.errors.description.message}
               </p>
             )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="organization">Organization</Label>
+            <Select
+              value={form.watch('organization_id')}
+              onValueChange={(value) => 
+                form.setValue('organization_id', value === 'personal' ? '' : value)
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select organization or personal" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="personal">Personal Project</SelectItem>
+                {organizations.map((org) => (
+                  <SelectItem key={org.id} value={org.id}>
+                    {org.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
