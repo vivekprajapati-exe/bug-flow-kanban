@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -63,7 +64,14 @@ export const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({
   const onSubmit = async (data: CreateProjectFormData) => {
     setLoading(true);
     try {
-      await projectsApi.createProject(data);
+      // Ensure data conforms to CreateProjectData type
+      const projectData: CreateProjectData = {
+        name: data.name,
+        description: data.description,
+        status: data.status,
+      };
+      
+      await projectsApi.createProject(projectData);
       
       toast({
         title: 'Project created!',

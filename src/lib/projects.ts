@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 export interface Project {
@@ -155,7 +156,7 @@ export const projectsApi = {
       .from('project_members')
       .select(`
         *,
-        profiles(name, email)
+        profiles!project_members_user_id_fkey(name, email)
       `)
       .eq('project_id', projectId)
       .order('created_at', { ascending: true });

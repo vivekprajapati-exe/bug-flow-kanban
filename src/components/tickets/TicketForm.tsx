@@ -21,8 +21,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useSupabaseClient } from '@/integrations/supabase/client';
-import { useToast } from '@/components/ui/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 const formSchema = z.object({
   title: z.string().min(2, {
@@ -43,7 +43,6 @@ interface TicketFormProps {
 }
 
 export function TicketForm({ projectId, onTicketCreated, projectMembers }: TicketFormProps) {
-  const supabase = useSupabaseClient();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 

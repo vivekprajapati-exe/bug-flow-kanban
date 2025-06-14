@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from 'react';
-import { useSupabaseClient } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import {
   Table,
   TableBody,
@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 interface Ticket {
   id: string;
@@ -33,7 +33,6 @@ interface TicketListProps {
 }
 
 export function TicketList({ projectId, onTicketUpdated }: TicketListProps) {
-  const supabase = useSupabaseClient();
   const { toast } = useToast();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [isLoading, setIsLoading] = useState(true);
