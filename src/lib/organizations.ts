@@ -52,8 +52,7 @@ export const organizationsApi = {
       .from('organizations')
       .select(`
         *,
-        organization_members!inner(role),
-        organization_members(count)
+        organization_members!inner(role)
       `)
       .order('updated_at', { ascending: false });
 
@@ -62,11 +61,23 @@ export const organizationsApi = {
       throw new Error(error.message);
     }
 
-    return data.map(org => ({
-      ...org,
-      user_role: org.organization_members?.[0]?.role,
-      member_count: org.organization_members?.length || 0
-    }));
+    // Get member counts separately
+    const orgsWithCounts = await Promise.all(
+      data.map(async (org) => {
+        const { count } = await supabase
+          .from('organization_members')
+          .select('*', { count: 'exact', head: true })
+          .eq('organization_id', org.id);
+
+        return {
+          ...org,
+          user_role: org.organization_members?.[0]?.role as 'owner' | 'admin' | 'member',
+          member_count: count || 0
+        };
+      })
+    );
+
+    return orgsWithCounts;
   },
 
   // Get single organization by ID
@@ -75,8 +86,7 @@ export const organizationsApi = {
       .from('organizations')
       .select(`
         *,
-        organization_members!inner(role),
-        organization_members(count)
+        organization_members!inner(role)
       `)
       .eq('id', organizationId)
       .single();
@@ -87,10 +97,15 @@ export const organizationsApi = {
       throw new Error(error.message);
     }
 
+    const { count } = await supabase
+      .from('organization_members')
+      .select('*', { count: 'exact', head: true })
+      .eq('organization_id', organizationId);
+
     return {
       ...data,
-      user_role: data.organization_members?.[0]?.role,
-      member_count: data.organization_members?.length || 0
+      user_role: data.organization_members?.[0]?.role as 'owner' | 'admin' | 'member',
+      member_count: count || 0
     };
   },
 
@@ -158,7 +173,7 @@ export const organizationsApi = {
       .from('organization_members')
       .select(`
         *,
-        profiles!organization_members_user_id_fkey(name, email)
+        profiles(name, email)
       `)
       .eq('organization_id', organizationId)
       .order('created_at', { ascending: true });
@@ -168,7 +183,14 @@ export const organizationsApi = {
       throw new Error(error.message);
     }
 
-    return data;
+    return data.map(member => ({
+      ...member,
+      role: member.role as 'owner' | 'admin' | 'member',
+      profiles: member.profiles ? {
+        name: member.profiles.name || '',
+        email: member.profiles.email || ''
+      } : undefined
+    }));
   },
 
   // Invite member to organization

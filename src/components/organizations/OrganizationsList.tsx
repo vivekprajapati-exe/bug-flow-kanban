@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus, Search } from 'lucide-react';
@@ -15,6 +16,7 @@ export const OrganizationsList: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const loadOrganizations = async () => {
     try {
@@ -51,8 +53,7 @@ export const OrganizationsList: React.FC = () => {
   }, [organizations, searchTerm]);
 
   const handleOrganizationClick = (organization: Organization) => {
-    console.log('Navigate to organization:', organization.id);
-    // TODO: Implement navigation to organization detail page
+    navigate(`/organizations/${organization.id}`);
   };
 
   const handleDeleteOrganization = async (organization: Organization) => {
@@ -146,8 +147,7 @@ export const OrganizationsList: React.FC = () => {
                 // TODO: Implement edit dialog
               }}
               onManageMembers={(org) => {
-                console.log('Manage members for:', org.id);
-                // TODO: Implement member management dialog
+                navigate(`/organizations/${org.id}`);
               }}
             />
           ))}

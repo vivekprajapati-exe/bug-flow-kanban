@@ -10,6 +10,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Dashboard from "./pages/Dashboard";
 import Projects from "./pages/Projects";
 import Organizations from "./pages/Organizations";
+import OrganizationDetail from "./pages/OrganizationDetail";
 import AuthPage from "./pages/AuthPage";
 import NotFound from "./pages/NotFound";
 
@@ -46,6 +47,14 @@ const App = () => (
                   element={
                     <ProtectedRoute>
                       <Organizations />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/organizations/:id" 
+                  element={
+                    <ProtectedRoute>
+                      <OrganizationDetail />
                     </ProtectedRoute>
                   } 
                 />
