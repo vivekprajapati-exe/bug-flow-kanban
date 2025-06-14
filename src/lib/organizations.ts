@@ -173,7 +173,7 @@ export const organizationsApi = {
       .from('organization_members')
       .select(`
         *,
-        profiles(name, email)
+        profiles:user_id(name, email)
       `)
       .eq('organization_id', organizationId)
       .order('created_at', { ascending: true });
