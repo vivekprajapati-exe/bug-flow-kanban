@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 export interface Organization {
@@ -173,7 +172,7 @@ export const organizationsApi = {
       .from('organization_members')
       .select(`
         *,
-        profiles(name, email)
+        profiles!fk_organization_members_user_id(name, email)
       `)
       .eq('organization_id', organizationId)
       .order('created_at', { ascending: true });
